@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: eh_user
+      POSTGRES_PASSWORD: eh_pass
+      POSTGRES_DB: experimenthub
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    ports:
+      - "8001:8000"
+    environment:
+      DATABASE_URL: postgresql://eh_user:eh_pass@postgres:5432/experimenthub
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app
+
+volumes:
+  pgdata:
