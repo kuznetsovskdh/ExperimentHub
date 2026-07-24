@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from db import get_db
-from models import Experiment, Assignment
+from models import Experiment, Assignment, Variant
 from stats.randomization import assign_variant
 
 router = APIRouter(prefix="/experiments", tags=["assignment"])
@@ -16,10 +16,22 @@ def get_assignment(exp_id: int, entity_id: str, db: Session = Depends(get_db)):
 
     existing = db.query(Assignment).filter_by(experiment_id=exp_id, entity_id=entity_id).first()
     if existing:
-        return {"experiment_id": exp_id, "entity_id": entity_id, "variant_id": existing.variant_id}
+        variant = db.get(Variant, existing.variant_id)
+        return {
+            "experiment_id": exp_id,
+            "entity_id": entity_id,
+            "variant_id": existing.variant_id,
+            "variant_name": variant.name if variant else None
+        }
 
     variant_id = assign_variant(entity_id, exp_id, exp.variants)
     assignment = Assignment(experiment_id=exp_id, entity_id=entity_id, variant_id=variant_id)
     db.add(assignment)
     db.commit()
-    return {"experiment_id": exp_id, "entity_id": entity_id, "variant_id": variant_id}
+    variant = db.get(Variant, variant_id)
+    return {
+        "experiment_id": exp_id,
+        "entity_id": entity_id,
+        "variant_id": variant_id,
+        "variant_name": variant.name if variant else None
+    }

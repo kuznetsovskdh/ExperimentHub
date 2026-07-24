@@ -9,6 +9,8 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - eh_network
 
   app:
     build: .
@@ -20,6 +22,12 @@ services:
       - postgres
     volumes:
       - .:/app
+    networks:
+      - eh_network
+
+networks:
+  eh_network:
+    external: true
 
 volumes:
   pgdata:
