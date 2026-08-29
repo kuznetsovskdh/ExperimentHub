@@ -3,8 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from db import get_db
-from models import Experiment, Variant, Assignment
-from schemas import ExperimentCreate, ExperimentOut, ExperimentDetail
+from models import Experiment, Variant, Assignment, Event, Result
+from schemas import ExperimentCreate, ExperimentDetail
 
 router = APIRouter(prefix="/experiments", tags=["experiments"])
 
@@ -36,9 +36,15 @@ def create_experiment(data: ExperimentCreate, db: Session = Depends(get_db)):
     return _detail(exp)
 
 
-@router.get("/", response_model=List[ExperimentOut])
+@router.get("/", response_model=List[ExperimentDetail])
 def list_experiments(db: Session = Depends(get_db)):
-    return db.query(Experiment).order_by(Experiment.id).all()
+    """
+    Список экспериментов вместе с вариантами.
+
+    Варианты отдаются сразу: без них в списке не видно, как делится трафик,
+    и клиенту пришлось бы делать запрос на каждый эксперимент отдельно.
+    """
+    return [_detail(e) for e in db.query(Experiment).order_by(Experiment.id).all()]
 
 
 @router.get("/{exp_id}", response_model=ExperimentDetail)
@@ -88,6 +94,41 @@ def resume_experiment(exp_id: int, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(exp)
     return _detail(exp)
+
+
+@router.delete("/{exp_id}")
+def delete_experiment(
+    exp_id: int,
+    force: bool = False,
+    db: Session = Depends(get_db),
+):
+    """
+    Удаляет эксперимент вместе с его вариантами, назначениями и событиями.
+
+    Эксперимент с собранными данными по умолчанию не удаляется: потерять
+    результаты дороже, чем оставить лишнюю строку в списке. Для осознанного
+    удаления нужен force=true.
+    """
+    exp = db.get(Experiment, exp_id)
+    if not exp:
+        raise HTTPException(404, "Эксперимент не найден")
+
+    events = db.query(Event).filter_by(experiment_id=exp_id).count()
+    if events and not force:
+        raise HTTPException(
+            409,
+            f"В эксперименте {exp_id} собрано {events} событий. "
+            f"Удаление уничтожит их безвозвратно — повторите с force=true, "
+            f"если это действительно нужно.",
+        )
+
+    db.query(Result).filter_by(experiment_id=exp_id).delete()
+    db.query(Event).filter_by(experiment_id=exp_id).delete()
+    db.query(Assignment).filter_by(experiment_id=exp_id).delete()
+    db.query(Variant).filter_by(experiment_id=exp_id).delete()
+    db.delete(exp)
+    db.commit()
+    return {"status": "deleted", "experiment_id": exp_id, "events_removed": events}
 
 
 def _detail(exp: Experiment) -> dict:

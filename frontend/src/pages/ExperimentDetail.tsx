@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Term } from "@/components/Term";
 import { IntervalBar } from "@/components/IntervalBar";
-import { fmtP, pct, pp } from "@/lib/utils";
+import { IntegrationGuide } from "@/components/IntegrationGuide";
+import { fmtP, num, pct, pp } from "@/lib/utils";
 
 /** Подпись к управляющему параметру: что он меняет и почему это важно. */
 function Field({
@@ -79,6 +80,11 @@ export default function ExperimentDetail() {
     load();
   }, [load]);
 
+  // «Нет назначений» и «недостаточно данных» означают, что продукт ещё
+  // не подключён, — это состояние онбординга, а не сбой.
+  const needsIntegration =
+    !!error && /нет ни одного назначения|Недостаточно данных/i.test(error);
+
   const toggleStatus = async () => {
     if (!exp) return;
     const next =
@@ -138,7 +144,7 @@ export default function ExperimentDetail() {
 
       <div className="mt-12 grid gap-8 lg:grid-cols-[300px_1fr]">
         {/* Управление расчётом */}
-        <aside className="space-y-5 self-start rounded-xl border border-line-soft bg-surface p-5 lg:sticky lg:top-28">
+        <aside className="order-2 space-y-5 self-start rounded-xl border border-line-soft bg-surface p-5 lg:sticky lg:top-28 lg:order-1">
           <p className="eyebrow">как считать</p>
 
           <Field
@@ -160,7 +166,7 @@ export default function ExperimentDetail() {
               value={aggregation}
               onChange={(e) => setAggregation(e.target.value)}
             >
-              <option value="max">max — засчитать успех, если был хоть раз</option>
+              <option value="max">max — успех, если был хоть раз</option>
               <option value="last">last — последнее значение</option>
               <option value="first">first — первое значение</option>
               <option value="mean">mean — среднее</option>
@@ -175,9 +181,9 @@ export default function ExperimentDetail() {
           >
             <Select value={method} onChange={(e) => setMethod(e.target.value)}>
               <option value="auto">авто</option>
-              <option value="z_test">z-тест (доли)</option>
-              <option value="t_test">t-тест Уэлча (числа)</option>
-              <option value="bootstrap">bootstrap (перекошенные данные)</option>
+              <option value="z_test">z-тест — доли</option>
+              <option value="t_test">t-тест Уэлча — числа</option>
+              <option value="bootstrap">bootstrap — перекошенные данные</option>
             </Select>
           </Field>
 
@@ -235,12 +241,23 @@ export default function ExperimentDetail() {
         </aside>
 
         {/* Результат */}
-        <div className="min-w-0">
+        <div className="order-1 min-w-0 lg:order-2">
           {loading && !result && (
             <div className="h-[420px] animate-pulse rounded-xl border border-line-soft bg-surface" />
           )}
 
-          {error && (
+          {/* Для эксперимента, куда ещё не пришли данные, «нет назначений» —
+              не ошибка, а следующий шаг работы. Показываем инструкцию
+              по подключению продукта вместо сообщения о сбое. */}
+          {error && needsIntegration && exp && (
+            <IntegrationGuide
+              experimentId={expId}
+              entityType={exp.entity_type}
+              variants={exp.variants ?? []}
+            />
+          )}
+
+          {error && !needsIntegration && (
             <div className="rounded-xl border border-bad/30 bg-bad/5 p-6">
               <div className="flex items-start gap-3">
                 <Info className="mt-0.5 size-4 shrink-0 text-bad" />
@@ -248,6 +265,10 @@ export default function ExperimentDetail() {
                   <p className="font-medium text-ink">Расчёт невозможен</p>
                   <p className="mt-2 text-[14px] leading-relaxed text-muted">
                     {error}
+                  </p>
+                  <p className="mt-3 text-[13px] leading-relaxed text-faint">
+                    Проверьте имя метрики и настройки слева — часть параметров
+                    меняет требования к данным.
                   </p>
                 </div>
               </div>
@@ -334,15 +355,15 @@ export default function ExperimentDetail() {
                     <p className="mt-2 text-[14px] text-muted">
                       Фактически{" "}
                       <span className="num text-control">
-                        {result.srm.observed_ratio[0]}%
+                        {num(result.srm.observed_ratio[0], 1)}%
                       </span>{" "}
                       /{" "}
                       <span className="num text-treatment">
-                        {result.srm.observed_ratio[1]}%
+                        {num(result.srm.observed_ratio[1], 1)}%
                       </span>{" "}
                       при заданных{" "}
                       <span className="num">
-                        {result.srm.expected_ratio.join(" / ")}%
+                        {result.srm.expected_ratio.map((v) => num(v, 0)).join(" / ")}%
                       </span>
                     </p>
                   </div>

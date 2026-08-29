@@ -34,7 +34,7 @@ export function NavHeader() {
 
   const [activePos, setActivePos] = React.useState<Pos | null>(null);
 
-  React.useLayoutEffect(() => {
+  const measure = React.useCallback(() => {
     const el = itemRefs.current[activeIndex];
     if (!el) {
       setActivePos(null);
@@ -45,7 +45,25 @@ export function NavHeader() {
       width: el.getBoundingClientRect().width,
       opacity: 1,
     });
-  }, [activeIndex, pathname]);
+  }, [activeIndex]);
+
+  React.useLayoutEffect(() => {
+    measure();
+
+    // Шрифты грузятся асинхронно, и до их применения ширины пунктов другие.
+    // Без повторного замера подложка навсегда остаётся на координатах,
+    // посчитанных по запасному шрифту, и не совпадает с активным пунктом.
+    if (document.fonts?.status !== "loaded") {
+      document.fonts?.ready.then(measure).catch(() => undefined);
+    }
+
+    // Пересчёт при изменении размеров: ширина пунктов зависит от брейкпоинта.
+    const list = listRef.current;
+    if (!list || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(list);
+    return () => ro.disconnect();
+  }, [measure, pathname]);
 
   const pos = hover ?? activePos ?? { left: 0, width: 0, opacity: 0 };
 

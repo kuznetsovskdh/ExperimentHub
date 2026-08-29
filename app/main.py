@@ -28,7 +28,27 @@ app.include_router(stats_tools.router)
 
 @app.get("/")
 def root():
-    return {"status": "ok", "service": "ExperimentHub"}
+    """
+    Корень сервиса.
+
+    Отдаёт не только статус, но и куда идти дальше: человек, открывший этот
+    адрес в браузере, иначе упирается в голый JSON и не понимает, что делать.
+    """
+    return {
+        "status": "ok",
+        "service": "ExperimentHub",
+        "links": {
+            "документация_api": "/docs",
+            "интерфейс": "http://localhost:3002",
+            "проверка_живости": "/health",
+        },
+        "быстрый_старт": {
+            "создать_эксперимент": "POST /experiments/",
+            "получить_вариант": "GET /experiments/{id}/assignment?entity_id=X",
+            "отправить_метрику": "POST /experiments/{id}/events",
+            "результаты": "GET /experiments/{id}/results?metric_name=X",
+        },
+    }
 
 
 @app.get("/health")

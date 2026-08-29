@@ -44,7 +44,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative min-h-screen">
       <header className="sticky top-0 z-40 border-b border-line-soft bg-ground/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1240px] items-center justify-between gap-4 px-5 py-3">
+        <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-4 px-5 py-3">
           <Link to="/" className="group flex shrink-0 items-center gap-2.5">
             {/* Знак: две доли, расходящиеся от шва. */}
             <span className="flex items-center gap-[3px]" aria-hidden="true">
@@ -57,7 +57,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </Link>
 
-          <div className="hidden md:block">
+          {/* До lg навигация переезжает во вторую строку: на 768px она
+              вместе с логотипом и переключателем не помещается в ряд. */}
+          <div className="hidden lg:block">
             <NavHeader />
           </div>
 
@@ -67,7 +69,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <div className="border-t border-line-soft px-5 py-2 md:hidden">
+        <div className="border-t border-line-soft px-5 py-2 lg:hidden">
           <div className="overflow-x-auto">
             <NavHeader />
           </div>

@@ -170,7 +170,9 @@ def test_8_3b_stopped_experiment_rejects_assignment(client):
 def test_8_3c_stopped_experiment_still_computes_results(client):
     """Остановка закрывает сбор данных, но не доступ к уже собранному."""
     exp = make_experiment(client)
-    for i in range(10):
+    # 30, а не 10: при десяти случайный сплит иногда оставляет в группе
+    # меньше двух наблюдений, и расчёт законно отказывается считать.
+    for i in range(30):
         eid = f"u{i}"
         client.get(f"/experiments/{exp['id']}/assignment", params={"entity_id": eid})
         client.post(f"/experiments/{exp['id']}/events", json={
