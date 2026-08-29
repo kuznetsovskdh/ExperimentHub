@@ -40,6 +40,16 @@ services:
     networks:
       - eh_network
 
+  frontend:
+    build: ./frontend
+    ports:
+      - "${FRONTEND_PORT:-3002}:80"
+    depends_on:
+      - app
+    restart: on-failure
+    networks:
+      - eh_network
+
 networks:
   # Внешняя сеть, общая с rustest и salesguard: клиентские продукты
   # обращаются к ExperimentHub по имени сервиса. Создать один раз:

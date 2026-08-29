@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Дизайн-система «Расщепление».
+
+  Смысл A/B-теста — расщепить одну популяцию на две параллельные реальности
+  и измерить расхождение. Отсюда два полюса-акцента вместо одного: control
+  холодный, treatment заряженный. Цвет здесь кодирует роль варианта и нигде
+  не используется декоративно — если что-то стального цвета, это контроль.
+*/
+
+:root {
+  /* Без этого браузер рисует нативные контролы (select, checkbox, скроллбары)
+     в светлой схеме: на тёмном фоне получались белые поля со светлым текстом. */
+  color-scheme: dark;
+
+  --ground: #080b10;
+  --surface: #0f141b;
+  --raised: #161d26;
+  --line: #26313d;
+  --line-soft: #1a222c;
+
+  --ink: #e9eef2;
+  --muted: #8195a1;
+  --faint: #55646f;
+
+  --control: #6e8ca0;
+  --treatment: #ff6b3d;
+
+  --good: #35c08a;
+  --warn: #e0a83c;
+  --bad: #e5484d;
+
+  --seam: #26313d;
+}
+
+* {
+  border-color: var(--line-soft);
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: "Golos Text", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Зерно поверх всей страницы: убирает пластиковую плоскость тёмного фона.
+   Генерируется фильтром, а не картинкой, — никакой внешней зависимости. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection {
+  background: var(--treatment);
+  color: #0a0a0a;
+}
+
+:focus-visible {
+  outline: 2px solid var(--treatment);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Выпадающий список системный, поэтому его пункты стилизуются отдельно:
+   иначе они наследуют светлую палитру ОС. */
+option {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* Числа всегда моноширинные и в колонку — цифры сравнивают взглядом. */
+.num {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.display {
+  font-family: "Unbounded", system-ui, sans-serif;
+  letter-spacing: -0.04em;
+  line-height: 0.92;
+  text-wrap: balance;
+}
+
+.eyebrow {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* Шов — вертикальная линия расщепления. Проходит через страницы и служит
+   нулевой отметкой в графиках эффекта. */
+.seam {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--seam) 12%,
+    var(--seam) 88%,
+    transparent
+  );
+}
+
+.hairline {
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--line) 20%,
+    var(--line) 80%,
+    transparent
+  );
+}
+
+/* Подчёркивание термина: намекает на подсказку, не крича об этом. */
+.term-underline {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--faint);
+  text-underline-offset: 4px;
+  cursor: help;
+  transition: text-decoration-color 0.18s ease, color 0.18s ease;
+}
+.term-underline:hover,
+.term-underline:focus-visible {
+  text-decoration-color: var(--treatment);
+  color: #fff;
+}
+
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.tooltip-in {
+  animation: tooltip-in 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Уважаем системную настройку: вся атмосфера — необязательная. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--ground);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--faint);
+}
